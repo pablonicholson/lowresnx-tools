@@ -30,14 +30,14 @@ for sy in range(0, height, 8):
 		c1 = c2 = c3 = c4 = 0
 		for y in range(8):
 			for x in range(8):
-				p1 = pixels[7 - x + sx,     y + sy]
-				p2 = pixels[    x + sx,     y + sy]
-				p3 = pixels[7 - x + sx, 7 - y + sy]
-				p4 = pixels[    x + sx, 7 - y + sy]
-				c1 |= ((p1 & 1) << x + 64 | (p1 >> 1 & 1) << x) << (7 - y) * 8
-				c2 |= ((p2 & 1) << x + 64 | (p2 >> 1 & 1) << x) << (7 - y) * 8
-				c3 |= ((p3 & 1) << x + 64 | (p3 >> 1 & 1) << x) << (7 - y) * 8
-				c4 |= ((p4 & 1) << x + 64 | (p4 >> 1 & 1) << x) << (7 - y) * 8
+				p1 = pixels[7 - x + sx, 7 - y + sy]
+				p2 = pixels[    x + sx, 7 - y + sy]
+				p3 = pixels[7 - x + sx,     y + sy]
+				p4 = pixels[    x + sx,     y + sy]
+				c1 |= ((p1 & 1) << x + 64 | (p1 >> 1 & 1) << x) << y * 8
+				c2 |= ((p2 & 1) << x + 64 | (p2 >> 1 & 1) << x) << y * 8
+				c3 |= ((p3 & 1) << x + 64 | (p3 >> 1 & 1) << x) << y * 8
+				c4 |= ((p4 & 1) << x + 64 | (p4 >> 1 & 1) << x) << y * 8
 		if c1 in lch:
 			lbg.append(lch.index(c1))
 			lbg.append(pal | 0x00)

@@ -18,8 +18,8 @@ for sy in range(0, height, 8):
 		c = 0
 		for y in range(8):
 			for x in range(8):
-				p = pixels[7 - x + sx, y + sy]
-				c |= ((p & 1) << x + 64 | (p >> 1 & 1) << x) << (7 - y) * 8
+				p = pixels[7 - x + sx, 7 - y + sy]
+				c |= ((p & 1) << x + 64 | (p >> 1 & 1) << x) << y * 8
 		lch.append(c)
 
 sys.stdout.write("#2:CHR\n")
