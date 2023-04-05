@@ -1,0 +1,27 @@
+#!/usr/bin/python3
+import sys
+import PIL.Image
+
+if len(sys.argv) < 2:
+	exit("usage: %s imagefile" % sys.argv[0])
+
+img = PIL.Image.open(sys.argv[1])
+img = img.convert("P", dither=0, palette=1, colors=4)
+
+pixel = img.load()
+
+lch = []
+
+for sy in range(0, img.height, 8):
+	for sx in range(0, img.width, 8):
+		ch = 0
+		for y in range(8):
+			for x in range(8):
+				px = pixel[7 - x + sx, y + sy]
+				ch |= (((px & 1) << (x+64)) | (((px >> 1) & 1) << x)) << ((7-y) * 8)
+		lch.append(ch)
+
+sys.stdout.write("#2:CHR\n")
+for c in lch:
+	sys.stdout.write("%032X" % c)
+sys.stdout.write("\n")
