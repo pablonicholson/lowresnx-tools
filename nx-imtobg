@@ -3,21 +3,23 @@ import sys
 import PIL.Image
 
 if len(sys.argv) < 2:
-	exit("usage: %s imagefile [palette]" % sys.argv[0])
+	sys.exit("usage: %s imagefile [pal]" % sys.argv[0])
+else:
+	fname = sys.argv[1]
 if len(sys.argv) > 2:
 	pal = int(sys.argv[2])
 else:
 	pal = 0
 
-img = PIL.Image.open(sys.argv[1])
+img = PIL.Image.open(fname)
 img = img.convert("P", dither=0, palette=1, colors=4)
 img = img.resize((160, 128))
 
 pixels = img.load()
 width, height = 160, 128
 
-lch = []
-lch.append(0)
+lchr = []
+lchr.append(0)
 
 lbg = []
 lbg.append(0)
@@ -38,29 +40,29 @@ for sy in range(0, height, 8):
 				c2 |= ((p2 & 1) << x + 64 | (p2 >> 1 & 1) << x) << y * 8
 				c3 |= ((p3 & 1) << x + 64 | (p3 >> 1 & 1) << x) << y * 8
 				c4 |= ((p4 & 1) << x + 64 | (p4 >> 1 & 1) << x) << y * 8
-		if c1 in lch:
-			lbg.append(lch.index(c1))
+		if c1 in lchr:
+			lbg.append(lchr.index(c1))
 			lbg.append(pal | 0x00)
-		elif c2 in lch:
-			lbg.append(lch.index(c2))
+		elif c2 in lchr:
+			lbg.append(lchr.index(c2))
 			lbg.append(pal | 0x08)
-		elif c3 in lch:
-			lbg.append(lch.index(c3))
+		elif c3 in lchr:
+			lbg.append(lchr.index(c3))
 			lbg.append(pal | 0x10)
-		elif c4 in lch:
-			lbg.append(lch.index(c4))
+		elif c4 in lchr:
+			lbg.append(lchr.index(c4))
 			lbg.append(pal | 0x18)
 		else:
-			lbg.append(len(lch))
+			lbg.append(len(lchr))
 			lbg.append(pal | 0x00)
-			lch.append(c1)
+			lchr.append(c1)
 
 sys.stdout.write("#2:CHR\n")
-for c in lch:
+for c in lchr:
 	sys.stdout.write("%032X" % c)
 sys.stdout.write("\n")
 
 sys.stdout.write("#3:BG\n")
-for b in lbg:
-	sys.stdout.write("%02X" % b)
+for c in lbg:
+	sys.stdout.write("%02X" % c)
 sys.stdout.write("\n")

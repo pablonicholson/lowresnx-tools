@@ -1,0 +1,79 @@
+#!/usr/bin/python3
+import sys
+import PIL.Image
+
+def loadrom(fp, nrom, msize):
+	lbuf = []
+	sbuf = ""
+	strt = 0
+
+	fp.seek(0)
+	for line in fp:
+		line = line.strip()
+		if strt:
+			if line.startswith("#"):
+				strt = 0
+		if strt:
+			sbuf += line
+			while len(sbuf) >= msize:
+				lbuf.append(int(sbuf[:msize], 16))
+				sbuf = sbuf[msize:]
+	
+		if line.startswith("#%d:" % nrom):
+			strt = 1
+	return lbuf
+
+if __name__ == "__main__":
+	if len(sys.argv) < 2:
+		sys.exit("usage: %s nxfile [chrom] [pal] [palrom]" % sys.argv[0])
+	else:
+		fname = sys.argv[1]
+	if len(sys.argv) > 2:
+		chrom = int(sys.argv[2])
+	else:
+		chrom = 2
+	if len(sys.argv) > 3:
+		pal = int(sys.argv[3])
+	else:
+		pal = 0
+	if len(sys.argv) > 4:
+		palrom = int(sys.argv[4])
+	else:
+		palrom = 1
+	
+	file = open(fname, "r")
+	lpal = loadrom(file, palrom, 8)
+	lchr = loadrom(file, chrom, 32)
+	
+	if pal >= len(lpal):
+		lpal = [
+			0x053f2f00, 0x00383400,
+			0x003c0c00, 0x003f3c00,
+			0x003f2a15, 0x003f2a15,
+			0x003f2a15, 0x003f2a15
+		]
+
+	lclr = []
+	for nclr in range(4):
+		rgb = lpal[pal] >> (24 - nclr * 8) & 0xff
+		lclr.append((rgb >> 4 & 3) * 80 + 15)
+		lclr.append((rgb >> 2 & 3) * 80 + 15)
+		lclr.append((rgb      & 3) * 80 + 15)
+	
+	img = PIL.Image.new("P", (128, 128))
+	img.putpalette(lclr)
+	pixels = img.load()
+	
+	sx = sy = 0
+	for c in lchr:
+		for y in range(8):
+			for x in range(8):
+				hi = c >> (x + y * 8) & 1
+				lo = c >> (x + y * 8 + 64) & 1
+				pixels[7 - x + sx, 7 - y + sy] = lo | hi << 1
+		sx += 8
+		if sx >= 128:
+			sy += 8
+			sx = 0
+
+	img.save(fname + ".png")

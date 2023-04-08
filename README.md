@@ -6,7 +6,7 @@ Script to convert image files into characters and bg, it will compress the image
 
 Usage:
 ```
-nx-imtobg imagefile [palette] >> nxfile
+nx-imtobg imagefile [pal] >> nxfile
 ```
 It will create two ROM entries, with the first entry containing characters data, and the second entry containing bg data which is used to restore the original image.
 
@@ -18,3 +18,12 @@ Usage:
 nx-imtochr imagefile >> nxfile
 ```
 It will create one ROM entry containing characters data.
+
+## nx-chrtoim
+Script to convert characters into image files.
+
+Usage:
+```
+nx-chrtoim nxfile [chrom] [pal] [palrom]
+```
+It will create a PNG image from characters data.
