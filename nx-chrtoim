@@ -3,25 +3,25 @@ import sys
 import PIL.Image
 
 def loadrom(fp, nrom, msize):
-	lbuf = []
+	lout = []
 	sbuf = ""
-	strt = 0
+	st = 0
 
 	fp.seek(0)
 	for line in fp:
 		line = line.strip()
-		if strt:
+		if st:
 			if line.startswith("#"):
-				strt = 0
-		if strt:
+				st = 0
+		if st:
 			sbuf += line
 			while len(sbuf) >= msize:
-				lbuf.append(int(sbuf[:msize], 16))
+				lout.append(int(sbuf[:msize], 16))
 				sbuf = sbuf[msize:]
 	
 		if line.startswith("#%d:" % nrom):
-			strt = 1
-	return lbuf
+			st = 1
+	return lout
 
 if __name__ == "__main__":
 	if len(sys.argv) < 2:
