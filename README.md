@@ -22,19 +22,15 @@ nx-imtochr imagefile >> nxfile
 ```
 
 ## nx-bgtoim
-Convert bg into image files.
-
-It will create a PNG image from bg data.
+Convert bg into image files. It will create a PNG image from bg data.
 
 Usage:
 ```
-nx-chrtoim nxfile [bgrom] [chrom]
+nx-bgtoim nxfile [bgrom] [chrom]
 ```
 
 ## nx-chrtoim
-Convert characters into image files.
-
-It will create a PNG image from character data.
+Convert characters into image files. It will create a PNG image from character data.
 
 Usage:
 ```
