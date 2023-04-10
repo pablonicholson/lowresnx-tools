@@ -60,9 +60,11 @@ if __name__ == "__main__":
 			lclr.append((rgb >> 2 & 3) * 80 + 15)
 			lclr.append((rgb      & 3) * 80 + 15)
 
-	img = PIL.Image.new("P", (160, 128))
+	img = PIL.Image.new("P", (lbg[2] * 8, lbg[3] * 8))
 	img.putpalette(lclr)
+
 	pixels = img.load()
+	width, height = img.size
 
 	sx = sy = 0
 	for i, c in enumerate(lbg):
@@ -87,7 +89,7 @@ if __name__ == "__main__":
 				elif flp == 0x18:
 					pixels[    x + sx,     y + sy] = px
 		sx += 8
-		if sx >= 160:
+		if sx >= width:
 			sy += 8
 			sx = 0
 
