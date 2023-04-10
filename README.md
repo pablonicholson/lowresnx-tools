@@ -12,9 +12,7 @@ nx-imtobg imagefile [pal] >> nxfile
 ```
 
 ## nx-imtochr
-Convert image files into characters, without compression.
-
-It will create one ROM entry containing character data.
+Convert image files into characters, without compression. It will create one ROM entry containing character data.
 
 Usage:
 ```

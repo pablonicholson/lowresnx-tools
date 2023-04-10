@@ -53,9 +53,14 @@ if __name__ == "__main__":
 		]
 
 	lclr = []
-	for pal in lpal:
+	for npal, pal in enumerate(lpal):
 		for nclr in range(4):
 			rgb = pal >> (24 - nclr * 8) & 0xff
+			if nclr == 0:
+				if npal == 0:
+					clr = rgb
+				else:
+					rgb = clr
 			lclr.append((rgb >> 4 & 3) * 80 + 15)
 			lclr.append((rgb >> 2 & 3) * 80 + 15)
 			lclr.append((rgb      & 3) * 80 + 15)

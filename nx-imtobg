@@ -13,10 +13,9 @@ else:
 
 img = PIL.Image.open(fname)
 img = img.convert("P", dither=0, palette=1, colors=4)
-img = img.resize((160, 128))
 
 pixels = img.load()
-width, height = 160, 128
+width, height = img.size
 
 lchr = []
 lchr.append(0)
@@ -24,8 +23,8 @@ lchr.append(0)
 lbg = []
 lbg.append(0)
 lbg.append(0)
-lbg.append(20)
-lbg.append(16)
+lbg.append(width // 8)
+lbg.append(height // 8)
 
 for sy in range(0, height, 8):
 	for sx in range(0, width, 8):
