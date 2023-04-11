@@ -2,6 +2,13 @@
 import sys
 import PIL.Image
 
+defpal = [
+	0x053f2f00, 0x00383400,
+	0x003c0c00, 0x003f3c00,
+	0x003f2a15, 0x003f2a15,
+	0x003f2a15, 0x003f2a15
+]
+
 def loadrom(fp, nrom, msize):
 	lout = []
 	sbuf = ""
@@ -22,6 +29,76 @@ def loadrom(fp, nrom, msize):
 		if line.startswith("#%d:" % nrom):
 			st = 1
 	return lout
+
+def putbg8(bg, chr, im):
+	pixels = im.load()
+	width, height = im.size
+
+	sx = sy = 0
+	for i, c in enumerate(bg):
+		if i < 4 or i % 2:
+			continue
+
+		for y in range(8):
+			for x in range(8):
+				hi = lchr[c] >> (x + y * 8) & 1
+				lo = lchr[c] >> (x + y * 8 + 64) & 1
+
+				flp = lbg[i + 1] & 0x18
+				pal = lbg[i + 1] & 0x07
+
+				px = (lo | hi << 1) + pal * 4
+				if flp == 0x00:
+					pixels[7 - x + sx, 7 - y + sy] = px
+				elif flp == 0x08:
+					pixels[    x + sx, 7 - y + sy] = px
+				elif flp == 0x10:
+					pixels[7 - x + sx,     y + sy] = px
+				elif flp == 0x18:
+					pixels[    x + sx,     y + sy] = px
+		sx += 8
+		if sx >= width:
+			sy += 8
+			sx = 0
+
+def putbg16(bg, chr, im):
+	pixels = im.load()
+	width, height = im.size
+
+	sx = sy = 0
+	for i, c in enumerate(bg):
+		if i < 4 or i % 2:
+			continue
+
+		for y in range(16):
+			for x in range(16):
+				ch = c
+				dx, dy = 0, 0
+				if x > 7:
+					ch += 1
+					dx = 8
+				if y > 7:
+					ch += 16
+					dy = 8
+				hi = lchr[ch] >> (x % 8 + y % 8 * 8) & 1
+				lo = lchr[ch] >> (x % 8 + y % 8 * 8 + 64) & 1
+
+				flp = lbg[i + 1] & 0x18
+				pal = lbg[i + 1] & 0x07
+
+				px = (lo | hi << 1) + pal * 4
+				if flp == 0x00:
+					pixels[7 - x % 8 + sx + dx, 7 - y % 8 + sy + dy] = px
+				elif flp == 0x08:
+					pixels[x % 8 + sx + 8 - dx, 7 - y % 8 + sy + dy] = px
+				elif flp == 0x10:
+					pixels[7 - x % 8 + sx + dx, y % 8 + sy + 8 - dy] = px
+				elif flp == 0x18:
+					pixels[x % 8 + sx + 8 - dx, y % 8 + sy + 8 - dy] = px
+		sx += 16
+		if sx >= width:
+			sy += 16
+			sx = 0
 
 if __name__ == "__main__":
 	if len(sys.argv) < 2:
@@ -45,12 +122,7 @@ if __name__ == "__main__":
 	lbg = loadrom(file, bgrom, 2)
 
 	if len(lpal) < 8:
-		lpal = [
-			0x053f2f00, 0x00383400,
-			0x003c0c00, 0x003f3c00,
-			0x003f2a15, 0x003f2a15,
-			0x003f2a15, 0x003f2a15
-		]
+		lpal = defpal
 
 	lclr = []
 	for npal, pal in enumerate(lpal):
@@ -69,51 +141,11 @@ if __name__ == "__main__":
 	img = PIL.Image.new("P", (lbg[2] * tsize, lbg[3] * tsize))
 	img.putpalette(lclr)
 
-	pixels = img.load()
-	width, height = img.size
-
-	sx = sy = 0
-	for i, c in enumerate(lbg):
-		if i < 4 or i % 2:
-			continue
-
-		for y in range(tsize):
-			for x in range(tsize):
-				ch = c
-				dx, dy = 0, 0
-				if x > 7:
-					ch += 1
-					dx += 8
-				if y > 7:
-					ch += 16
-					dy += 8
-				hi = lchr[ch] >> (x % 8 + y % 8 * 8) & 1
-				lo = lchr[ch] >> (x % 8 + y % 8 * 8 + 64) & 1
-
-				flp = lbg[i + 1] & 0x18
-				pal = lbg[i + 1] & 0x07
-
-				px = (lo | hi << 1) + pal * 4
-				if flp == 0x00:
-					pixels[7 - x % 8 + sx + dx, 7 - y % 8 + sy + dy] = px
-				elif flp == 0x08:
-					if tsize > 8:
-						pixels[x % 8 + sx + 8 - dx, 7 - y % 8 + sy + dy] = px
-					else:
-						pixels[    x % 8 + sx + dx, 7 - y % 8 + sy + dy] = px
-				elif flp == 0x10:
-					if tsize > 8:
-						pixels[7 - x % 8 + sx + dx, y % 8 + sy + 8 - dy] = px
-					else:
-						pixels[7 - x % 8 + sx + dx,     y % 8 + sy + dy] = px
-				elif flp == 0x18:
-					if tsize > 8:
-						pixels[x % 8 + sx + 8 - dx, y % 8 + sy + 8 - dy] = px
-					else:
-						pixels[    x % 8 + sx + dx,     y % 8 + sy + dy] = px
-		sx += tsize
-		if sx >= width:
-			sy += tsize
-			sx = 0
+	if tsize == 8:
+		putbg8(lbg, lchr, img)
+	elif tsize == 16:
+		putbg16(lbg, lchr, img)
+	else:
+		sys.exit("error: invalid cell size")
 
 	img.save(fname + ".png")
