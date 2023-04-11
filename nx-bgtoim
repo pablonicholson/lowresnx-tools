@@ -65,7 +65,8 @@ if __name__ == "__main__":
 			lclr.append((rgb >> 2 & 3) * 80 + 15)
 			lclr.append((rgb      & 3) * 80 + 15)
 
-	img = PIL.Image.new("P", (lbg[2] * 8, lbg[3] * 8))
+	tsize = 8 + lbg[1] * 8
+	img = PIL.Image.new("P", (lbg[2] * tsize, lbg[3] * tsize))
 	img.putpalette(lclr)
 
 	pixels = img.load()
@@ -76,26 +77,34 @@ if __name__ == "__main__":
 		if i < 4 or i % 2:
 			continue
 
-		for y in range(8):
-			for x in range(8):
-				hi = lchr[c] >> (x + y * 8) & 1
-				lo = lchr[c] >> (x + y * 8 + 64) & 1
+		for y in range(tsize):
+			for x in range(tsize):
+				ch = c
+				dx, dy = sx, sy
+				if x > 7:
+					ch += 1
+					dx += 8
+				if y > 7:
+					ch += 16
+					dy += 8
+				hi = lchr[ch] >> (x % 8 + y % 8 * 8) & 1
+				lo = lchr[ch] >> (x % 8 + y % 8 * 8 + 64) & 1
 
 				flp = lbg[i + 1] & 0x18
 				pal = lbg[i + 1] & 0x07
 
 				px = (lo | hi << 1) + pal * 4
 				if flp == 0x00:
-					pixels[7 - x + sx, 7 - y + sy] = px
+					pixels[7 - x % 8 + dx, 7 - y % 8 + dy] = px
 				elif flp == 0x08:
-					pixels[    x + sx, 7 - y + sy] = px
+					pixels[    x % 8 + dx, 7 - y % 8 + dy] = px
 				elif flp == 0x10:
-					pixels[7 - x + sx,     y + sy] = px
+					pixels[7 - x % 8 + dx,     y % 8 + dy] = px
 				elif flp == 0x18:
-					pixels[    x + sx,     y + sy] = px
-		sx += 8
+					pixels[    x % 8 + dx,     y % 8 + dy] = px
+		sx += tsize
 		if sx >= width:
-			sy += 8
+			sy += tsize
 			sx = 0
 
 	img.save(fname + ".png")
