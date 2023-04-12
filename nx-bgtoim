@@ -9,7 +9,7 @@ defpal = [
 	0x003f2a15, 0x003f2a15
 ]
 
-def loadrom(fp, nrom, msize):
+def loadrom(fp, nrom, mlen):
 	lout = []
 	sbuf = ""
 	st = 0
@@ -22,9 +22,9 @@ def loadrom(fp, nrom, msize):
 				st = 0
 		if st:
 			sbuf += line
-			while len(sbuf) >= msize:
-				lout.append(int(sbuf[:msize], 16))
-				sbuf = sbuf[msize:]
+			while len(sbuf) >= mlen:
+				lout.append(int(sbuf[:mlen], 16))
+				sbuf = sbuf[mlen:]
 	
 		if line.startswith("#%d:" % nrom):
 			st = 1
@@ -100,21 +100,42 @@ def putbg16(bg, chr, im):
 			sy += 16
 			sx = 0
 
+def putpal(pal, im):
+	lclr = []
+	for npal, p in enumerate(pal):
+		for nclr in range(4):
+			rgb = p >> (24 - nclr * 8) & 0xff
+			if nclr == 0:
+				if npal == 0:
+					clr = rgb
+				else:
+					rgb = clr
+			lclr.append((rgb >> 4 & 3) * 80 + 15)
+			lclr.append((rgb >> 2 & 3) * 80 + 15)
+			lclr.append((rgb      & 3) * 80 + 15)
+	im.putpalette(lclr)
+
 if __name__ == "__main__":
 	if len(sys.argv) < 2:
-		sys.exit("usage: %s nxfile [bgrom] [chrom]" % sys.argv[0])
+		sys.exit("usage: %s nxfile [palidx] [palrom] [chrom] [bgrom]" % sys.argv[0])
 	else:
 		fname = sys.argv[1]
 	if len(sys.argv) > 2:
-		bgrom = int(sys.argv[2])
+		palidx = int(sys.argv[2])
 	else:
-		bgrom = 3
+		palidx = 0
 	if len(sys.argv) > 3:
-		chrom = int(sys.argv[3])
+		palrom = int(sys.argv[3])
+	else:
+		palrom = 1
+	if len(sys.argv) > 4:
+		chrom = int(sys.argv[4])
 	else:
 		chrom = 2
-
-	palrom = 1
+	if len(sys.argv) > 5:
+		bgrom = int(sys.argv[5])
+	else:
+		bgrom = 3
 
 	file = open(fname, "r")
 	lpal = loadrom(file, palrom, 8)
@@ -124,23 +145,10 @@ if __name__ == "__main__":
 	if len(lpal) < 8:
 		lpal = defpal
 
-	lclr = []
-	for npal, pal in enumerate(lpal):
-		for nclr in range(4):
-			rgb = pal >> (24 - nclr * 8) & 0xff
-			if nclr == 0:
-				if npal == 0:
-					clr = rgb
-				else:
-					rgb = clr
-			lclr.append((rgb >> 4 & 3) * 80 + 15)
-			lclr.append((rgb >> 2 & 3) * 80 + 15)
-			lclr.append((rgb      & 3) * 80 + 15)
-
 	tsize = 8 + lbg[1] * 8
 	img = PIL.Image.new("P", (lbg[2] * tsize, lbg[3] * tsize))
-	img.putpalette(lclr)
 
+	putpal(lpal, img)
 	if tsize == 8:
 		putbg8(lbg, lchr, img)
 	elif tsize == 16:

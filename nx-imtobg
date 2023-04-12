@@ -2,66 +2,87 @@
 import sys
 import PIL.Image
 
-if len(sys.argv) < 2:
-	sys.exit("usage: %s imagefile [pal]" % sys.argv[0])
-else:
-	fname = sys.argv[1]
-if len(sys.argv) > 2:
-	pal = int(sys.argv[2])
-else:
-	pal = 0
+def getbg(bg, chr, pal, im):
+	pixels = im.load()
+	width, height = im.size
 
-img = PIL.Image.open(fname)
-img = img.convert("P", dither=0, palette=1, colors=4)
+	chr.append(0)
 
-pixels = img.load()
-width, height = img.size
+	bg.append(0)
+	bg.append(0)
+	bg.append(width // 8)
+	bg.append(height // 8)
 
-lchr = []
-lchr.append(0)
+	for sy in range(0, height, 8):
+		for sx in range(0, width, 8):
+			c1 = c2 = c3 = c4 = 0
+			for y in range(8):
+				for x in range(8):
+					p1 = pixels[7 - x + sx, 7 - y + sy]
+					p2 = pixels[    x + sx, 7 - y + sy]
+					p3 = pixels[7 - x + sx,     y + sy]
+					p4 = pixels[    x + sx,     y + sy]
+					c1 |= ((p1 & 1) << x + 64 | (p1 >> 1 & 1) << x) << y * 8
+					c2 |= ((p2 & 1) << x + 64 | (p2 >> 1 & 1) << x) << y * 8
+					c3 |= ((p3 & 1) << x + 64 | (p3 >> 1 & 1) << x) << y * 8
+					c4 |= ((p4 & 1) << x + 64 | (p4 >> 1 & 1) << x) << y * 8
+			if c1 in chr:
+				bg.append(chr.index(c1))
+				bg.append(pal | 0x00)
+			elif c2 in chr:
+				bg.append(chr.index(c2))
+				bg.append(pal | 0x08)
+			elif c3 in chr:
+				bg.append(chr.index(c3))
+				bg.append(pal | 0x10)
+			elif c4 in chr:
+				bg.append(chr.index(c4))
+				bg.append(pal | 0x18)
+			else:
+				bg.append(len(chr))
+				bg.append(pal | 0x00)
+				chr.append(c1)
 
-lbg = []
-lbg.append(0)
-lbg.append(0)
-lbg.append(width // 8)
-lbg.append(height // 8)
+def printchr(chr, nrom):
+	sys.stdout.write("#%d:CHR\n" % nrom)
+	for c in chr:
+		sys.stdout.write("%032X" % c)
+	sys.stdout.write("\n")
 
-for sy in range(0, height, 8):
-	for sx in range(0, width, 8):
-		c1 = c2 = c3 = c4 = 0
-		for y in range(8):
-			for x in range(8):
-				p1 = pixels[7 - x + sx, 7 - y + sy]
-				p2 = pixels[    x + sx, 7 - y + sy]
-				p3 = pixels[7 - x + sx,     y + sy]
-				p4 = pixels[    x + sx,     y + sy]
-				c1 |= ((p1 & 1) << x + 64 | (p1 >> 1 & 1) << x) << y * 8
-				c2 |= ((p2 & 1) << x + 64 | (p2 >> 1 & 1) << x) << y * 8
-				c3 |= ((p3 & 1) << x + 64 | (p3 >> 1 & 1) << x) << y * 8
-				c4 |= ((p4 & 1) << x + 64 | (p4 >> 1 & 1) << x) << y * 8
-		if c1 in lchr:
-			lbg.append(lchr.index(c1))
-			lbg.append(pal | 0x00)
-		elif c2 in lchr:
-			lbg.append(lchr.index(c2))
-			lbg.append(pal | 0x08)
-		elif c3 in lchr:
-			lbg.append(lchr.index(c3))
-			lbg.append(pal | 0x10)
-		elif c4 in lchr:
-			lbg.append(lchr.index(c4))
-			lbg.append(pal | 0x18)
-		else:
-			lbg.append(len(lchr))
-			lbg.append(pal | 0x00)
-			lchr.append(c1)
+def printbg(bg, nrom):
+	sys.stdout.write("#%d:BG\n" % nrom)
+	for c in bg:
+		sys.stdout.write("%02X" % c)
+	sys.stdout.write("\n")
 
-sys.stdout.write("#2:CHR\n")
-for c in lchr:
-	sys.stdout.write("%032X" % c)
-sys.stdout.write("\n")
+if __name__ == "__main__":
+	if len(sys.argv) < 2:
+		sys.exit("usage: %s imagefile [palidx] [palrom] [chrom] [bgrom]" % sys.argv[0])
+	else:
+		fname = sys.argv[1]
+	if len(sys.argv) > 2:
+		palidx = int(sys.argv[2])
+	else:
+		palidx = 0
+	if len(sys.argv) > 3:
+		palrom = int(sys.argv[3])
+	else:
+		palrom = 1
+	if len(sys.argv) > 4:
+		chrom = int(sys.argv[4])
+	else:
+		chrom = 2
+	if len(sys.argv) > 5:
+		bgrom = int(sys.argv[5])
+	else:
+		bgrom = 3
 
-sys.stdout.write("#3:BG\n")
-for c in lbg:
-	sys.stdout.write("%02X" % c)
-sys.stdout.write("\n")
+	img = PIL.Image.open(fname)
+	img = img.convert("P", dither=0, palette=1, colors=4)
+
+	lbg = []
+	lchr = []
+	getbg(lbg, lchr, palidx, img)
+
+	printchr(lchr, chrom)
+	printbg(lbg, bgrom)

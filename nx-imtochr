@@ -2,29 +2,51 @@
 import sys
 import PIL.Image
 
-if len(sys.argv) < 2:
-	sys.exit("usage: %s imagefile" % sys.argv[0])
-else:
-	fname = sys.argv[1]
+def getchr(chr, im):
+	pixels = im.load()
+	width, height = im.size
 
-img = PIL.Image.open(fname)
-img = img.convert("P", dither=0, palette=1, colors=4)
+	for sy in range(0, height, 8):
+		for sx in range(0, width, 8):
+			c = 0
+			for y in range(8):
+				for x in range(8):
+					p = pixels[7 - x + sx, 7 - y + sy]
+					c |= ((p & 1) << x + 64 | (p >> 1 & 1) << x) << y * 8
+			chr.append(c)
 
-pixels = img.load()
-width, height = img.size
+def printchr(chr, nrom):
+	sys.stdout.write("#%d:CHR\n" % nrom)
+	for c in chr:
+		sys.stdout.write("%032X" % c)
+	sys.stdout.write("\n")
 
-lchr = []
+if __name__ == "__main__":
+	if len(sys.argv) < 2:
+		sys.exit("usage: %s imagefile [palidx] [palrom] [chrom] [bgrom]" % sys.argv[0])
+	else:
+		fname = sys.argv[1]
+	if len(sys.argv) > 2:
+		palidx = int(sys.argv[2])
+	else:
+		palidx = 0
+	if len(sys.argv) > 3:
+		palrom = int(sys.argv[3])
+	else:
+		palrom = 1
+	if len(sys.argv) > 4:
+		chrom = int(sys.argv[4])
+	else:
+		chrom = 2
+	if len(sys.argv) > 5:
+		bgrom = int(sys.argv[5])
+	else:
+		bgrom = 3
 
-for sy in range(0, height, 8):
-	for sx in range(0, width, 8):
-		c = 0
-		for y in range(8):
-			for x in range(8):
-				p = pixels[7 - x + sx, 7 - y + sy]
-				c |= ((p & 1) << x + 64 | (p >> 1 & 1) << x) << y * 8
-		lchr.append(c)
+	img = PIL.Image.open(fname)
+	img = img.convert("P", dither=0, palette=1, colors=4)
 
-sys.stdout.write("#2:CHR\n")
-for c in lchr:
-	sys.stdout.write("%032X" % c)
-sys.stdout.write("\n")
+	lchr = []
+	getchr(lchr, img)
+
+	printchr(lchr, chrom)

@@ -8,7 +8,7 @@ It will create two ROM entries, with the first entry containing character data, 
 
 Usage:
 ```
-nx-imtobg imagefile [pal] >> nxfile
+nx-imtobg imagefile [palidx] [palrom] [chrom] [bgrom] >> nxfile
 ```
 
 ## nx-imtochr
@@ -16,7 +16,7 @@ Convert image files into characters, without compression. It will create one ROM
 
 Usage:
 ```
-nx-imtochr imagefile >> nxfile
+nx-imtochr imagefile [palidx] [palrom] [chrom] [bgrom] >> nxfile
 ```
 
 ## nx-bgtoim
@@ -24,7 +24,7 @@ Convert bg into image files. It will create a PNG image from bg data.
 
 Usage:
 ```
-nx-bgtoim nxfile [bgrom] [chrom]
+nx-bgtoim nxfile [palidx] [palrom] [chrom] [bgrom]
 ```
 
 ## nx-chrtoim
@@ -32,5 +32,5 @@ Convert characters into image files. It will create a PNG image from character d
 
 Usage:
 ```
-nx-chrtoim nxfile [chrom] [pal] [palrom]
+nx-chrtoim nxfile [palidx] [palrom] [chrom] [bgrom]
 ```
