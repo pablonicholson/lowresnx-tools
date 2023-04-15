@@ -16,17 +16,17 @@ def loadrom(fp, nrom, mlen):
 
 	fp.seek(0)
 	for line in fp:
-		line = line.strip()
+		line = line.translate(str.maketrans("", "", "\t\n\r "))
 		if st:
 			if line.startswith("#"):
-				st = 0
-		if st:
+				break
+
 			sbuf += line
 			while len(sbuf) >= mlen:
 				lout.append(int(sbuf[:mlen], 16))
 				sbuf = sbuf[mlen:]
-	
-		if line.startswith("#%d:" % nrom):
+
+		if line.startswith("#") and int(line[1:].split(":")[0]) == nrom:
 			st = 1
 	return lout
 
@@ -45,47 +45,57 @@ def putchr(chr, im):
 			sy += 8
 			sx = 0
 
-def putpal(pal, npal, im):
+def putnpal(pal, npal, im):
 	lclr = []
 	for nclr in range(4):
-		rgb = pal[npal] >> (24 - nclr * 8) & 0xff
+		if nclr == 0:
+			rgb = pal[0] >> 24 & 0xff
+		else:
+			rgb = pal[npal] >> (24 - nclr * 8) & 0xff
 		lclr.append((rgb >> 4 & 3) * 80 + 15)
 		lclr.append((rgb >> 2 & 3) * 80 + 15)
 		lclr.append((rgb      & 3) * 80 + 15)
 	im.putpalette(lclr)
 
-if __name__ == "__main__":
-	if len(sys.argv) < 2:
-		sys.exit("usage: %s nxfile [palidx] [palrom] [chrom] [bgrom]" % sys.argv[0])
+def saveim(im, fname):
+	if fname.lower().endswith((".png", ".gif", ".bmp")):
+		im.save(fname)
 	else:
-		fname = sys.argv[1]
-	if len(sys.argv) > 2:
-		palidx = int(sys.argv[2])
+		im.save(fname + ".png")
+
+if __name__ == "__main__":
+	if len(sys.argv) < 3:
+		sys.exit("usage: %s nxfile imagefile [palidx] [palrom] [chrom] [bgrom]" % sys.argv[0])
+	else:
+		nxfile = sys.argv[1]
+		imfile = sys.argv[2]
+	if len(sys.argv) > 3:
+		palidx = int(sys.argv[3])
 	else:
 		palidx = 0
-	if len(sys.argv) > 3:
-		palrom = int(sys.argv[3])
+	if len(sys.argv) > 4:
+		palrom = int(sys.argv[4])
 	else:
 		palrom = 1
-	if len(sys.argv) > 4:
-		chrom = int(sys.argv[4])
+	if len(sys.argv) > 5:
+		chrom = int(sys.argv[5])
 	else:
 		chrom = 2
-	if len(sys.argv) > 5:
-		bgrom = int(sys.argv[5])
+	if len(sys.argv) > 6:
+		bgrom = int(sys.argv[6])
 	else:
 		bgrom = 3
-	
-	file = open(fname, "r")
-	lpal = loadrom(file, palrom, 8)
-	lchr = loadrom(file, chrom, 32)
-	
+
+	fp = open(nxfile, "r")
+	lpal = loadrom(fp, palrom, 8)
+	lchr = loadrom(fp, chrom, 32)
+
 	if len(lpal) <= palidx:
 		lpal = defpal
 
-	img = PIL.Image.new("P", (128, 128))
+	im = PIL.Image.new("P", (128, 128))
 
-	putpal(lpal, palidx, img)
-	putchr(lchr, img)
+	putnpal(lpal, palidx, im)
+	putchr(lchr, im)
 
-	img.save(fname + ".png")
+	saveim(im, imfile)

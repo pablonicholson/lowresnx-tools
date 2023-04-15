@@ -2,6 +2,52 @@
 import sys
 import PIL.Image
 
+def getroms(fp):
+	num = []
+	nam = []
+	dat = []
+
+	st = 0
+	fp.seek(0)
+	for line in fp:
+		line = line.translate(str.maketrans("", "", "\t\n\r "))
+		if st:
+			if line.startswith("#"):
+				st = 0
+			else:
+				dat[-1] += line
+
+		if line.startswith("#"):
+			st = 1
+			n, s = line[1:].split(":")
+			num.append(int(n))
+			nam.append(s)
+			dat.append("")
+	fp.close()
+	return [num, nam, dat]
+
+def putroms(fp, roms):
+	nl = 0
+	fp.seek(0)
+	while 1:
+		pos = fp.tell()
+		line = fp.readline()
+		if not line:
+			nl = 1
+			break
+		if line[0] == "#":
+			break
+	fp.seek(pos)
+	if nl:
+		fp.write("\n")
+
+	for rom in sorted(zip(*roms)):
+		fp.write("#%d:%s\n" % (rom[0], rom[1]))
+		fp.write(rom[2])
+		fp.write("\n")
+	fp.truncate()
+	fp.close()
+
 def getchr(chr, im):
 	pixels = im.load()
 	width, height = im.size
@@ -15,38 +61,54 @@ def getchr(chr, im):
 					c |= ((p & 1) << x + 64 | (p >> 1 & 1) << x) << y * 8
 			chr.append(c)
 
-def printchr(chr, nrom):
-	sys.stdout.write("#%d:CHR\n" % nrom)
+def savechr(chr, nrom, lrom):
+	s = ""
 	for c in chr:
-		sys.stdout.write("%032X" % c)
-	sys.stdout.write("\n")
+		s += "%032X" % c
+	lrom[0].append(nrom)
+	lrom[1].append("CHR")
+	lrom[2].append(s)
+
+def loadim(fname):
+	im = PIL.Image.open(fname)
+	im = im.convert("P", dither=0, palette=1, colors=4)
+	return im
 
 if __name__ == "__main__":
-	if len(sys.argv) < 2:
-		sys.exit("usage: %s imagefile [palidx] [palrom] [chrom] [bgrom]" % sys.argv[0])
+	if len(sys.argv) < 3:
+		sys.exit("usage: %s imagefile nxfile [palidx] [palrom] [chrom] [bgrom]" % sys.argv[0])
 	else:
-		fname = sys.argv[1]
-	if len(sys.argv) > 2:
-		palidx = int(sys.argv[2])
+		imfile = sys.argv[1]
+		nxfile = sys.argv[2]
+	if len(sys.argv) > 3:
+		palidx = int(sys.argv[3])
 	else:
 		palidx = 0
-	if len(sys.argv) > 3:
-		palrom = int(sys.argv[3])
+	if len(sys.argv) > 4:
+		palrom = int(sys.argv[4])
 	else:
 		palrom = 1
-	if len(sys.argv) > 4:
-		chrom = int(sys.argv[4])
+	if len(sys.argv) > 5:
+		chrom = int(sys.argv[5])
 	else:
 		chrom = 2
-	if len(sys.argv) > 5:
-		bgrom = int(sys.argv[5])
+	if len(sys.argv) > 6:
+		bgrom = int(sys.argv[6])
 	else:
 		bgrom = 3
 
-	img = PIL.Image.open(fname)
-	img = img.convert("P", dither=0, palette=1, colors=4)
+	fp = open(nxfile, "a+")
+	roms = getroms(fp)
+
+	if chrom in roms[0]:
+		sys.exit("error: file entry #%d is not empty" % chrom)
+
+	im = loadim(imfile)
 
 	lchr = []
-	getchr(lchr, img)
+	getchr(lchr, im)
 
-	printchr(lchr, chrom)
+	savechr(lchr, chrom, roms)
+
+	fp = open(nxfile, "r+")
+	putroms(fp, roms)

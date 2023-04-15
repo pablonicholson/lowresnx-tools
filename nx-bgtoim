@@ -16,17 +16,17 @@ def loadrom(fp, nrom, mlen):
 
 	fp.seek(0)
 	for line in fp:
-		line = line.strip()
+		line = line.translate(str.maketrans("", "", "\t\n\r "))
 		if st:
 			if line.startswith("#"):
-				st = 0
-		if st:
+				break
+
 			sbuf += line
 			while len(sbuf) >= mlen:
 				lout.append(int(sbuf[:mlen], 16))
 				sbuf = sbuf[mlen:]
-	
-		if line.startswith("#%d:" % nrom):
+
+		if line.startswith("#") and int(line[1:].split(":")[0]) == nrom:
 			st = 1
 	return lout
 
@@ -104,56 +104,61 @@ def putpal(pal, im):
 	lclr = []
 	for npal, p in enumerate(pal):
 		for nclr in range(4):
-			rgb = p >> (24 - nclr * 8) & 0xff
 			if nclr == 0:
-				if npal == 0:
-					clr = rgb
-				else:
-					rgb = clr
+				rgb = pal[0] >> 24 & 0xff
+			else:
+				rgb = p >> (24 - nclr * 8) & 0xff
 			lclr.append((rgb >> 4 & 3) * 80 + 15)
 			lclr.append((rgb >> 2 & 3) * 80 + 15)
 			lclr.append((rgb      & 3) * 80 + 15)
 	im.putpalette(lclr)
 
-if __name__ == "__main__":
-	if len(sys.argv) < 2:
-		sys.exit("usage: %s nxfile [palidx] [palrom] [chrom] [bgrom]" % sys.argv[0])
+def saveim(im, fname):
+	if fname.lower().endswith((".png", ".gif", ".bmp")):
+		im.save(fname)
 	else:
-		fname = sys.argv[1]
-	if len(sys.argv) > 2:
-		palidx = int(sys.argv[2])
+		im.save(fname + ".png")
+
+if __name__ == "__main__":
+	if len(sys.argv) < 3:
+		sys.exit("usage: %s nxfile imagefile [palidx] [palrom] [chrom] [bgrom]" % sys.argv[0])
+	else:
+		nxfile = sys.argv[1]
+		imfile = sys.argv[2]
+	if len(sys.argv) > 3:
+		palidx = int(sys.argv[3])
 	else:
 		palidx = 0
-	if len(sys.argv) > 3:
-		palrom = int(sys.argv[3])
+	if len(sys.argv) > 4:
+		palrom = int(sys.argv[4])
 	else:
 		palrom = 1
-	if len(sys.argv) > 4:
-		chrom = int(sys.argv[4])
+	if len(sys.argv) > 5:
+		chrom = int(sys.argv[5])
 	else:
 		chrom = 2
-	if len(sys.argv) > 5:
-		bgrom = int(sys.argv[5])
+	if len(sys.argv) > 6:
+		bgrom = int(sys.argv[6])
 	else:
 		bgrom = 3
 
-	file = open(fname, "r")
-	lpal = loadrom(file, palrom, 8)
-	lchr = loadrom(file, chrom, 32)
-	lbg = loadrom(file, bgrom, 2)
+	fp = open(nxfile, "r")
+	lpal = loadrom(fp, palrom, 8)
+	lchr = loadrom(fp, chrom, 32)
+	lbg = loadrom(fp, bgrom, 2)
 
 	if len(lpal) < 8:
 		lpal = defpal
 
 	tsize = 8 + lbg[1] * 8
-	img = PIL.Image.new("P", (lbg[2] * tsize, lbg[3] * tsize))
+	im = PIL.Image.new("P", (lbg[2] * tsize, lbg[3] * tsize))
 
-	putpal(lpal, img)
+	putpal(lpal, im)
 	if tsize == 8:
-		putbg8(lbg, lchr, img)
+		putbg8(lbg, lchr, im)
 	elif tsize == 16:
-		putbg16(lbg, lchr, img)
+		putbg16(lbg, lchr, im)
 	else:
 		sys.exit("error: invalid cell size")
 
-	img.save(fname + ".png")
+	saveim(im, imfile)
