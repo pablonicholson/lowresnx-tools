@@ -76,7 +76,7 @@ def loadim(fname):
 
 if __name__ == "__main__":
 	if len(sys.argv) < 3:
-		sys.exit("usage: %s imagefile nxfile [palidx] [palrom] [chrom] [bgrom]" % sys.argv[0])
+		sys.exit("usage: %s imagefile nxfile [palidx [palrom [chrom [bgrom]]]]" % sys.argv[0])
 	else:
 		imfile = sys.argv[1]
 		nxfile = sys.argv[2]

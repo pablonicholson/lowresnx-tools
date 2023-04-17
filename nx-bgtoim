@@ -121,7 +121,7 @@ def saveim(im, fname):
 
 if __name__ == "__main__":
 	if len(sys.argv) < 3:
-		sys.exit("usage: %s nxfile imagefile [palidx] [palrom] [chrom] [bgrom]" % sys.argv[0])
+		sys.exit("usage: %s nxfile imagefile [palidx [palrom [chrom [bgrom]]]]" % sys.argv[0])
 	else:
 		nxfile = sys.argv[1]
 		imfile = sys.argv[2]
